@@ -1,0 +1,12 @@
+{
+  "summary": "The change introduces a division by zero for empty carts.",
+  "findings": [
+    {
+      "file": "cart.py",
+      "line": 2,
+      "severity": "high",
+      "title": "Empty carts raise ZeroDivisionError",
+      "explanation": "Restore the empty-list guard and add a test for an empty cart."
+    }
+  ]
+}

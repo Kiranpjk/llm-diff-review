@@ -1,0 +1,7 @@
+diff --git a/cart.py b/cart.py
+--- a/cart.py
++++ b/cart.py
+@@ -1,2 +1,2 @@
+ def average_total(totals):
+-    return sum(totals) / len(totals) if totals else 0
++    return sum(totals) / len(totals)

@@ -1,0 +1,25 @@
+name: Review pull request
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: write
+concurrency:
+  group: llm-diff-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.ANTHROPIC_API_KEY != ''
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: ./
+        if: env.ANTHROPIC_API_KEY != ''
+        with:
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}

@@ -9,11 +9,19 @@ PRIVATE_KEY_BOUNDARY = re.compile(
 )
 
 PATTERNS = (
-    r"""(?i)(\b(?:password|secret|token|api_key)\b["']?\s*[:=]\s*)(?:"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')""",
-    r"\bAKIA[A-Z0-9]{16}\b",
-    r"\bgh[po]_[A-Za-z0-9_]{8,}",
-    r"\bsk-[A-Za-z0-9_-]{8,}",
-    r"\bxox[a-z]-[A-Za-z0-9-]{8,}",
+    (
+        (
+            r"""(?i)([\w.-]*(?:password|passwd|secret|token|api[_-]?key)[\w.-]*["']?\s*[:=]\s*)"""
+            r"""(?!\[REDACTED\]|[\w.]*\()"""
+            r"""(?:"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|[^\s"',;()]+)"""
+        ),
+        r"\1[REDACTED]",
+    ),
+    (r"(://[^\s:/@]+:)[^\s@/]+(@)", r"\1[REDACTED]\2"),
+    (r"\bAKIA[A-Z0-9]{16}\b", "[REDACTED]"),
+    (r"\bgh[po]_[A-Za-z0-9_]{8,}", "[REDACTED]"),
+    (r"\bsk-[A-Za-z0-9_-]{8,}", "[REDACTED]"),
+    (r"\bxox[a-z]-[A-Za-z0-9-]{8,}", "[REDACTED]"),
 )
 
 
@@ -45,8 +53,7 @@ def redact_private_keys(text):
 
 def redact(text):
     text, count = redact_private_keys(text)
-    for index, pattern in enumerate(PATTERNS):
-        replacement = r"\1[REDACTED]" if index == 0 else "[REDACTED]"
+    for pattern, replacement in PATTERNS:
         text, replaced = re.subn(pattern, replacement, text)
         count += replaced
     return text, count

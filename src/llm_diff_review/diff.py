@@ -25,6 +25,11 @@ DEFAULT_IGNORE = (
     "*.tif",
     "*.avif",
     "*.svg",
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key",
+    "id_rsa*",
 )
 TRUNCATED = "\n[File diff truncated]\n"
 

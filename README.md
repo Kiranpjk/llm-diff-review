@@ -21,7 +21,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: Kiranpjk/llm-diff-review@main
+      - uses: Kiranpjk/llm-diff-review@v0.1.0
         with:
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
@@ -50,9 +50,9 @@ Dry runs require a local diff and make no GitHub calls. Supply a mock response f
 
 ### Privacy and limits
 
-The filtered diff is sent to Anthropic. Regex-based secret redaction is best effort. Only run this action on diffs you are allowed to send to Anthropic.
+The filtered diff is sent to Anthropic. Regex-based secret redaction is best effort: it covers password/secret/token/API-key assignments (quoted or not), URL credentials and common token formats, and `.env`, `*.pem`, `*.key` and `id_rsa*` files are never sent. It cannot know a secret that has no recognizable name or format. Only run this action on diffs you are allowed to send to Anthropic.
 
-The action uses one summary comment by the GitHub Actions bot, with no inline line comments. It skips binary files, common lockfiles, minified JavaScript, images, and files in `dist/`, `build/`, and `vendor/`. Whole file sections are grouped within the character budget. A file exceeding the budget is truncated with a marker. Each request reviews its own chunk. AI review can be wrong; verify before acting.
+The action uses one summary comment by the GitHub Actions bot, with no inline line comments. It skips binary files, common lockfiles, minified JavaScript, images, and files in `dist/`, `build/`, and `vendor/`. Whole file sections are grouped within the character budget. A file exceeding the budget is truncated with a marker. Each request reviews its own chunk. AI review can be wrong; verify before acting. `fail-on` is a convenience, not a security gate: a diff can contain text that talks the model out of reporting a problem, and a reply that is cut off or not JSON is treated as an error (exit 2) or as a summary with no findings.
 
 ### Tests
 

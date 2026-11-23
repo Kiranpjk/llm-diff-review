@@ -7,7 +7,6 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from .prompt import SYSTEM_PROMPT
-from .redact import redact
 
 DEFAULT_MODEL = "claude-sonnet-5-5"
 SEVERITIES = ("high", "medium", "low")
@@ -50,10 +49,10 @@ def review(diff, model, api_key):
         "https://api.anthropic.com/v1/messages",
         data=json.dumps(
             {
-                "model": redact(model)[0],
-                "max_tokens": 2000,
+                "model": model,
+                "max_tokens": 4096,
                 "system": SYSTEM_PROMPT,
-                "messages": [{"role": "user", "content": redact(diff)[0]}],
+                "messages": [{"role": "user", "content": diff}],
             }
         ).encode(),
         headers={
@@ -67,6 +66,8 @@ def review(diff, model, api_key):
         try:
             with urlopen(request, timeout=60) as response:
                 data = json.load(response)
+            if data.get("stop_reason") == "max_tokens":
+                raise ValueError("Model reply was cut off; lower --max-chars and retry")
             return parse_response(
                 "\n".join(
                     block["text"]

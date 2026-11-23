@@ -176,9 +176,9 @@ def test_anthropic_request_and_retry():
     assert request.get_header("X-api-key") == "test-key"
     assert send.call_args.kwargs == {"timeout": 60}
     body = json.loads(request.data)
-    assert body["max_tokens"] == 2000
+    assert body["max_tokens"] == 4096
     assert body["model"] == "test-model"
-    assert body["messages"][0]["content"] == "secret = [REDACTED]"
+    assert body["messages"][0]["content"] == 'secret = "example"'
     assert [call.args for call in pause.call_args_list] == [(1,), (2,)]
 
 
@@ -343,3 +343,50 @@ def test_interleaved_private_keys_in_diff():
     assert "key data" not in clean
     assert count == 2
     assert clean.endswith(file_diff())
+
+
+def test_redacts_prefixed_unquoted_and_url_secrets():
+    from llm_diff_review.redact import redact
+
+    for line in (
+        'DB_PASSWORD="hunter2"',
+        "password: hunter2",
+        "API_KEY=abc123def456",
+        "postgres://admin:s3cret@db/x",
+    ):
+        text, count = redact(line)
+        assert (
+            count == 1
+            and "hunter2" not in text
+            and "abc123" not in text
+            and "s3cret" not in text
+        )
+
+
+def test_env_files_are_never_sent():
+    from llm_diff_review.diff import chunk_diff
+
+    diff = "diff --git a/.env b/.env\n--- /dev/null\n+++ b/.env\n@@ -0,0 +1 @@\n+X=1\n"
+    chunks, _, skipped = chunk_diff(diff)
+    assert chunks == [] and skipped == [(".env", "ignored")]
+
+
+def test_cut_off_model_reply_is_an_error():
+    import io
+    import json
+    from unittest import mock
+
+    import pytest
+
+    from llm_diff_review.llm import review
+
+    body = json.dumps(
+        {"stop_reason": "max_tokens", "content": [{"type": "text", "text": "{"}]}
+    )
+    with (
+        mock.patch(
+            "llm_diff_review.llm.urlopen", return_value=io.BytesIO(body.encode())
+        ),
+        pytest.raises(ValueError, match="cut off"),
+    ):
+        review("diff", "m", "k")
